@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Udara Prompt Enhancer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            DEFAULT: '#FF5722', // The requested Deep Orange
+                            500: '#FF5722',
+                            600: '#F4511E',
+                            400: '#FF7043',
+                            300: '#FF8A65',
+                        },
+                        gray: {
+                            850: '#1f2937',
+                            900: '#111827',
+                            950: '#030712',
+                        }
+                    },
+                    animation: {
+                        'blob': 'blob 7s infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Glassmorphism Utilities */
+        .glass {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-input {
+            background: rgba(3, 7, 18, 0.5);
+            border: 1px solid rgba(55, 65, 81, 0.5);
+            transition: all 0.2s ease;
+        }
+
+        .glass-input:focus {
+            background: rgba(3, 7, 18, 0.8);
+            border-color: #FF5722;
+            box-shadow: 0 0 0 2px rgba(255, 87, 34, 0.2);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563; 
+        }
+        
+        /* Loader */
+        .loader {
+            border: 3px solid rgba(255, 87, 34, 0.1);
+            border-left-color: #FF5722;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-gray-100 min-h-screen flex flex-col items-center py-12 px-4 overflow-x-hidden selection:bg-brand/30 selection:text-white">
+
+    <!-- Ambient Background Effects (Orange Fire Theme) -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-brand-600/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob"></div>
+        <div class="absolute top-0 right-1/4 w-96 h-96 bg-red-600/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div class="absolute -bottom-32 left-1/3 w-96 h-96 bg-yellow-600/10 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+        <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="w-full max-w-4xl space-y-8 relative z-10 flex flex-col min-h-[85vh]">
+        
+        <!-- Header -->
+        <header class="text-center space-y-3 mb-6">
+            <div class="inline-flex items-center justify-center px-3 py-1 rounded-full border border-brand/30 bg-brand/10 text-brand-300 text-xs font-medium mb-2">
+                v2.1 &bull; Udara Edition
+            </div>
+            <h1 class="text-5xl font-bold tracking-tight text-white drop-shadow-sm">
+                Udara Prompt <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand via-red-500 to-yellow-500">Enhancer</span>
+            </h1>
+            <p class="text-gray-400 text-lg max-w-xl mx-auto">Transform vague ideas into sophisticated, structured engineering prompts.</p>
+        </header>
+
+        <!-- Configuration Card -->
+        <div class="glass rounded-2xl p-8 shadow-2xl ring-1 ring-white/10">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                
+                <!-- Provider Selection -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 ml-1">AI Model</label>
+                    <div class="relative group">
+                        <select id="provider" onchange="toggleCustomModel()" class="w-full glass-input text-gray-200 rounded-xl px-4 py-3 appearance-none focus:outline-none cursor-pointer">
+                            <optgroup label="Latest Google Models">
+                                <option value="gemini-3-pro-preview">Gemini 3 Pro Preview</option>
+                                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                            </optgroup>
+                            <optgroup label="OpenAI Models">
+                                <option value="gpt-4o">GPT-4o</option>
+                                <option value="gpt-4o-mini">GPT-4o Mini</option>
+                            </optgroup>
+                            <option value="custom">Custom ID...</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 group-hover:text-brand transition-colors">
+                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                        </div>
+                    </div>
+                    <!-- Hidden Custom Model Input -->
+                    <input type="text" id="customModelId" placeholder="e.g. gemini-1.0-pro" class="hidden mt-3 w-full glass-input text-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none placeholder-gray-500">
+                </div>
+
+                <!-- API Key Input -->
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 ml-1">API Key</label>
+                    <div class="relative">
+                        <input type="password" id="apiKey" placeholder="sk-..." class="w-full glass-input text-gray-200 rounded-xl px-4 py-3 focus:outline-none placeholder-gray-600 font-mono text-sm">
+                        <div class="absolute inset-y-0 right-0 flex items-center px-4">
+                            <span class="text-[10px] text-gray-500 border border-gray-700 rounded px-1.5 py-0.5">SECURE</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2 ml-1">Keys are stored only in browser memory. Never sent to our servers.</p>
+                </div>
+            </div>
+
+            <!-- User Input -->
+            <div class="mt-8">
+                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 ml-1">Simple Request</label>
+                <div class="relative">
+                    <textarea id="userPrompt" rows="3" placeholder="e.g., Help me write a blog post about the history of espresso..." class="w-full glass-input text-gray-200 rounded-xl px-4 py-3 focus:outline-none placeholder-gray-600 resize-none leading-relaxed"></textarea>
+                    <div class="absolute bottom-3 right-3 text-gray-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Button -->
+            <button id="enhanceBtn" onclick="enhancePrompt()" class="mt-8 w-full group relative overflow-hidden bg-gradient-to-r from-brand to-red-600 hover:from-brand-600 hover:to-red-500 text-white font-semibold py-4 px-6 rounded-xl transition duration-300 shadow-lg shadow-brand/25">
+                <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                <div class="flex items-center justify-center space-x-2 relative z-10">
+                    <span>Enhance Prompt</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform group-hover:translate-x-1 transition-transform" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+            </button>
+            
+            <!-- Error Message -->
+            <div id="errorMessage" class="hidden mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-200 text-sm flex items-center gap-3">
+                <svg class="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span id="errorText">Error message goes here</span>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingIndicator" class="hidden flex flex-col items-center justify-center py-12 space-y-4">
+            <div class="relative">
+                <div class="loader"></div>
+                <div class="absolute inset-0 bg-brand blur-xl opacity-20"></div>
+            </div>
+            <p class="text-brand-300 text-sm font-medium animate-pulse tracking-wide">OPTIMIZING STRUCTURE...</p>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsArea" class="hidden space-y-6 fade-in pb-4">
+            
+            <!-- Main Optimized Prompt -->
+            <div class="glass rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10">
+                <div class="bg-white/5 border-b border-white/5 px-6 py-4 flex justify-between items-center backdrop-blur-sm">
+                    <h2 class="text-brand-300 font-semibold flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Optimized Prompt JSON
+                    </h2>
+                    <button onclick="copyToClipboard('optimizedOutput')" class="group flex items-center gap-2 text-xs font-medium bg-gray-800/80 hover:bg-brand-600 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg border border-gray-700 hover:border-brand-500 transition-all duration-200">
+                        <span>Copy JSON</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    </button>
+                </div>
+                <div class="relative group">
+                    <pre id="optimizedOutput" class="p-6 overflow-x-auto whitespace-pre-wrap font-mono text-sm leading-relaxed text-blue-100/90 selection:bg-brand/40"></pre>
+                    <!-- Decorative corner glow -->
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-brand/5 blur-2xl -z-10 rounded-bl-full"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Critique -->
+                <div class="glass rounded-2xl p-6 shadow-xl ring-1 ring-white/5 hover:ring-white/10 transition-all duration-300">
+                    <h3 class="text-amber-400 font-semibold mb-4 flex items-center gap-2 text-sm uppercase tracking-wide">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                        Analysis
+                    </h3>
+                    <p id="critiqueOutput" class="text-gray-400 text-sm leading-relaxed"></p>
+                </div>
+
+                <!-- Recommendations -->
+                <div class="glass rounded-2xl p-6 shadow-xl ring-1 ring-white/5 hover:ring-white/10 transition-all duration-300">
+                    <h3 class="text-emerald-400 font-semibold mb-4 flex items-center gap-2 text-sm uppercase tracking-wide">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Suggestions
+                    </h3>
+                    <ul id="recommendationsOutput" class="space-y-3 text-sm text-gray-400">
+                        <!-- List items will be injected here -->
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-auto text-center py-6">
+            <a href="mailto:chukwudikenkpuruomachukwu@gmail.com" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-brand transition-colors duration-300">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                <span>Contact Developer</span>
+            </a>
+        </footer>
+
+    </div>
+
+    <script>
+        // System Prompt Definition
+        const SYSTEM_PROMPT = `
+        You are an expert Meta-Prompt Engineer. Your goal is to take a simple, vague user request and transform it into a highly sophisticated, structured prompt suitable for an LLM (like GPT-4 or Gemini 1.5).
+
+        Analyze the user's request.
+        Return ONLY a raw JSON object (no markdown formatting) with the following structure:
+        {
+            "optimized_prompt": {
+                "Persona": "The role the AI should adopt",
+                "Context": "Background information",
+                "Task": "Specific instructions",
+                "Format": "Output requirements",
+                "Constraints": "What to avoid or limit"
+            },
+            "critique": "A brief analysis of why the original prompt was weak and what was missing.",
+            "recommendations": ["Tip 1", "Tip 2", "Tip 3"]
+        }
+        
+        IMPORTANT: "optimized_prompt" MUST be a nested JSON object, not a plain string.
+        `;
+
+        function toggleCustomModel() {
+            const select = document.getElementById('provider');
+            const customInput = document.getElementById('customModelId');
+            if (select.value === 'custom') {
+                customInput.classList.remove('hidden');
+                setTimeout(() => customInput.focus(), 100);
+            } else {
+                customInput.classList.add('hidden');
+            }
+        }
+
+        async function enhancePrompt() {
+            const providerSelect = document.getElementById('provider');
+            let modelId = providerSelect.value;
+            
+            // Handle custom model input
+            if (modelId === 'custom') {
+                modelId = document.getElementById('customModelId').value.trim();
+                if (!modelId) {
+                    showError("Please enter a custom Model ID.");
+                    return;
+                }
+            }
+
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const userPrompt = document.getElementById('userPrompt').value.trim();
+            
+            const resultsArea = document.getElementById('resultsArea');
+            const errorDiv = document.getElementById('errorMessage');
+            const loader = document.getElementById('loadingIndicator');
+            const btn = document.getElementById('enhanceBtn');
+
+            // Reset UI
+            errorDiv.classList.add('hidden');
+            resultsArea.classList.add('hidden');
+            
+            // Validation
+            if (!apiKey) {
+                showError("Please enter an API Key.");
+                return;
+            }
+            if (!userPrompt) {
+                showError("Please enter a prompt to enhance.");
+                return;
+            }
+
+            // Set Loading State
+            loader.classList.remove('hidden');
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed', 'grayscale');
+
+            try {
+                let jsonResponse;
+
+                // Detect provider based on model ID string
+                if (modelId.includes('gpt')) {
+                    jsonResponse = await callOpenAI(apiKey, modelId, userPrompt);
+                } else {
+                    // Default to Gemini for 'gemini' or custom strings that aren't GPT
+                    jsonResponse = await callGemini(apiKey, modelId, userPrompt);
+                }
+
+                renderResults(jsonResponse);
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                loader.classList.add('hidden');
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed', 'grayscale');
+            }
+        }
+
+        async function callGemini(key, model, prompt) {
+            // Using v1beta to ensure access to newer models like 1.5 Pro
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+            
+            const payload = {
+                contents: [{
+                    parts: [{ text: SYSTEM_PROMPT + "\n\nUser Request: " + prompt }]
+                }],
+                generationConfig: {
+                    responseMimeType: "application/json"
+                }
+            };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                if (response.status === 404) {
+                    throw new Error(`Model '${model}' not found. Verify the model ID is correct for the API version.`);
+                }
+                throw new Error(err.error?.message || "Gemini API Error");
+            }
+
+            const data = await response.json();
+            const text = data.candidates[0].content.parts[0].text;
+            return JSON.parse(text);
+        }
+
+        async function callOpenAI(key, model, prompt) {
+            const url = 'https://api.openai.com/v1/chat/completions';
+            
+            const payload = {
+                model: model,
+                messages: [
+                    { role: "system", content: SYSTEM_PROMPT },
+                    { role: "user", content: prompt }
+                ],
+                response_format: { type: "json_object" }
+            };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${key}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error?.message || "OpenAI API Error");
+            }
+
+            const data = await response.json();
+            return JSON.parse(data.choices[0].message.content);
+        }
+
+        function renderResults(data) {
+            const resultsArea = document.getElementById('resultsArea');
+            
+            // Format the optimized prompt as pretty JSON if it's an object
+            let promptContent = data.optimized_prompt;
+            if (typeof promptContent === 'object') {
+                promptContent = JSON.stringify(promptContent, null, 2);
+            }
+            
+            document.getElementById('optimizedOutput').textContent = promptContent;
+            document.getElementById('critiqueOutput').textContent = data.critique;
+            
+            const recList = document.getElementById('recommendationsOutput');
+            recList.innerHTML = ''; // Clear previous
+            
+            if (data.recommendations && Array.isArray(data.recommendations)) {
+                data.recommendations.forEach(rec => {
+                    const li = document.createElement('li');
+                    li.className = "flex items-start gap-3 bg-white/5 p-3 rounded-lg border border-white/5";
+                    li.innerHTML = `
+                        <span class="text-emerald-400 mt-0.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </span>
+                        <span class="leading-snug">${rec}</span>
+                    `;
+                    recList.appendChild(li);
+                });
+            }
+
+            resultsArea.classList.remove('hidden');
+            // Scroll to results
+            resultsArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('errorMessage');
+            const textEl = document.getElementById('errorText');
+            textEl.textContent = msg;
+            el.classList.remove('hidden');
+        }
+
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            
+            // Create a temporary textarea element to handle the copy
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            
+            // Avoid scrolling to bottom
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            textArea.style.opacity = "0";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    const btn = document.querySelector(`button[onclick="copyToClipboard('${elementId}')"]`);
+                    const originalContent = btn.innerHTML;
+                    
+                    // Change style to success
+                    btn.className = "group flex items-center gap-2 text-xs font-medium bg-emerald-500/20 text-emerald-300 px-3 py-1.5 rounded-lg border border-emerald-500/30 transition-all duration-200";
+                    btn.innerHTML = `
+                        <span>Copied!</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    `;
+                    
+                    setTimeout(() => {
+                        btn.className = "group flex items-center gap-2 text-xs font-medium bg-gray-800/80 hover:bg-brand-600 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg border border-gray-700 hover:border-brand-500 transition-all duration-200";
+                        btn.innerHTML = originalContent;
+                    }, 2000);
+                } else {
+                    console.error('Fallback: Copying text command was unsuccessful');
+                }
+            } catch (err) {
+                console.error('Fallback: Oops, unable to copy', err);
+            }
+
+            document.body.removeChild(textArea);
+        }
+    </script>
+</body>
+</html>
